@@ -1,0 +1,251 @@
+<html>
+<head>
+<title>
+JWalk 1.0 Tool Suite
+</title>
+</head>
+<body>
+<p>This sub-package for <strong>JWalk 1.0</strong> contains custom test 
+input generators, &copy; Anthony J H Simons, 2006-2009.  Custom generators 
+may be selected by the tester to control how the <strong>JWalk 1.0</strong> 
+tool suite synthesises test inputs.  A library of custom generators is
+provided here, to which the tester may add their own custom generators.
+Several custom generators are loaded by default into the standard
+configuration of the <strong>JWalk 1.0</strong> tool suite; others must
+be explicitly loaded.   Other parts of the <strong>JWalk 1.0</strong>
+tool suite are described in the following packages: 
+<ul>
+<li>The root package <code>org.jwalk</code> is the entry point into the 
+JWalk component kit.</li>
+<li>The sub-package <code>org.jwalk.core</code> contains the core JWalk 
+test engine.</li>
+<li>The sub-package <code>org.jwalk.out</code> contains the test reports
+emitted by JWalk.</li>
+<li>The sub-package <code>org.jwalk.gen</code> contains custom test
+input generators.</li>
+<li>The sub-package <code>org.jwalk.test</code> contains sample test 
+classes.</li>
+<li>The sub-package <code>org.jwalk.tool</code> contains finished JWalk
+testing tools.</li>
+</ul>
+The rest of this package documentation describes the function of generators
+and how to construct custom generators.  For information about how to load
+custom generators, see the package <code>org.jwalk.tool</code>.
+</p>
+<h2>Master and Custom Generators</h2>
+<p>A <em>custom generator</em> is any Java class that implements the 
+<code>CustomGenerator</code> interface.  Such a class may be loaded by
+any of the <strong>JWalk 1.0</strong> tools to take control of how input
+values are synthesised during testing for the constructors and methods of
+the test class.  Reasons for doing this might include:
+<ul>
+<li>wanting to re-order the default sequence of test values</li>
+<li>wanting to specify a particular value sequence for a given type</li>
+<li>wanting to specify values for interface and abstract class types</li>
+<li>wanting to redirect standard input to read from a text file</li>
+<li>wanting to define closely the environment of the test class</li>
+</ul>
+The <strong>JWalk 1.0</strong> tools use a combination of 
+<code>MasterGenerator</code> and <code>CustomGenerator</code> generators to
+synthesise all test inputs.  A <code>MasterGenerator</code> synthesises
+values using its own standard algorithms, which generate a quasi-unique 
+value or object upon each request, but it also delegates requests to supply
+values of certain types to <code>CustomGenerator</code>s, which were 
+previously added as delegates of that master.  The delegated generators
+may synthesise values for one type, or for a group of types, using a
+different custom algorithm.  If the tester supplies a home-made
+custom generator, this can be made to synthesise values for particular
+types in any order desired.  In this way, it is possible to tailor the
+testing process to meet the expectations of the test class. 
+</p>
+<p>
+The standard <code>MasterGenerator</code> used by the tools is
+<code>ObjectGenerator</code>.  This generator synthesises all basic values
+in a quasi-unique monotonically increasing sequence.  Values are only
+"quasi-unique", since boolean values will inevitably cycle between 
+<code>false</code> and <code>true</code>.  Values for other primitive types
+are typically unique, for example, numeric values increase steadily from 1.
+Object values will be uniquely instantiated using either their default 
+constructor, or the first constructor with arguments that succeeds (the 
+arguments are synthesised recursively).  <code>ObjectGenerator</code> 
+delegates the synthesis of values for certain types to custom generators.
+</p>
+<p>Four standard <code>CustomGenerator</code>s are always loaded by the
+<strong>JWalk 1.0</strong> tools in the standard configuration, as delegates
+of <code>ObjectGenerator</code>.  These include:
+<ul>
+<li>StringGenerator - generates a conventional sequence of strings</li>
+<li>InterfaceGenerator - generates concrete instances for interfaces</li>
+<li>EnumGenerator - generates all values of enumerated types</li>
+<li>PlatformGenerator - generates values with platfom-specific ranges</li>
+</ul>
+These take control of how specific types are instantiated.  For example,
+there is no automatic means in Java for supplying instances of interface
+types, so this must be handled by a custom generator, which maps the
+interface type to a suitable concrete type and then requests an instance
+of this instead.  Again, the default generation strategy would produce
+an empty string, so a custom strategy is used to cycle through a series
+of 26 conventional strings, sorted alphabetically.
+</p>
+<h2>Providing Custom Generators</h2>
+<p>
+If the tester wishes to supply original custom generators, the following
+conventions must be observed.  The custom generator must satisfy the interface
+specified by <code>CustomGenerator</code>.  In particular, it must implement
+the following abstract methods:
+<ul>
+<li><code>boolean canCreate(Class&lt;?&gt; type)</code>, reporting whether 
+the generator can create values of the requested type;</li>
+<li><code>Object nextValue(Class&lt;?&gt; type)</code>, to synthesise the 
+next value of the requested type in the expected order; and</li>
+<li><code>void setOwner(MasterGenerator generator)</code>, to register its 
+owning MasterGenerator.</li>
+</ul>
+</p>
+<h3>The Contract for <em>boolean canCreate(Class&lt;?&gt; type)</em></h3>
+<p>This method reports whether the custom generator can synthesise instances
+of the requested type.  It should return <code>true</code> for all the class
+types that the custom generator can handle, that is, for which it can generate
+instances.  This method is called internally, when deciding whether
+to delegate a request to the custom generator.  The method should return
+<code>true</code>, if the custom generator creates instances of the requested
+type, and <code>false</code> otherwise.
+</p>
+<p>When the standard <code>MasterGenerator</code> receives a request to 
+synthesise a value of a particular type, it checks first whether any of its
+delegates can create this value.  If so, it forwards the request to the
+first delegate found in its list of delegates that is capable of creating the 
+value.  The list of delegates is ordered like a stack, such that delegates
+that were added most recently take priority over delegates that were added 
+earlier by the <code>MasterGenerator</code>.
+</p>
+<h3>The Contract for <em>Object nextValue(Class&lt;?&gt; type)</em></h3>
+<p>This method returns the next value in sequence for the requested type. 
+Whereas by default this would be a quasi-unique, monotonically increasing
+value on each invocation, custom generators are free to return values in
+other orders, so long as the order is completely deterministic and not
+random.  So, the sequence could skip or re-order values, or revisit values 
+that were returned on a previous invocation.  Random synthesis must be avoided, since
+this would defeat the capability of the <strong>JWalk 1.0</strong> toolset
+to learn predictable behaviour.
+</p>
+<p>The requested type must be a type that is acceptable to this custom
+generator, i.e. one for which <code>canCreate()</code> returns 
+<code>true</code>.  If not, the custom generator should raise a 
+<code>GeneratorException</code> reporting failure to synthesise  a value
+for the given type.  The result of this method is an object, an array, or a 
+"boxed" primitive value.
+</p>
+<h3>The Contract for <em>void setOwner(MasterGenerator generator)</em></h3>
+<p>This method registers a <code>MasterGenerator</code> as the owner of this
+custom generator, and is automatically called when this custom generator is
+added as a delegate of the <code>MasterGenerator</code>.  In this way, a
+custom generator may communicate with the master which owns it.  This can be
+useful in the design of certain custom generators, which intercept requests
+to handle certain types, but forward some of the requests to their owner.
+An example is <code>InterfaceGenerator</code>, which maps from abstract
+interfaces to concrete classes, then recursively asks its owner to produce
+an instance of the concrete class.
+</p>
+<p>A custom generator is free to ignore its owner if it so chooses.  Many
+custom generators need not communicate with their owner.  In this case, a 
+<em>nullop</em> implementation of the method should be provided.
+</p>
+<h2>An Example Custom Generator</h2>
+<p>The following is an example custom generator.  <code>IndexGenerator</code>
+takes control of how values are synthesised for the <code>int</code> type.
+Instead of a monotonically increasing sequence, it generates repeating pairs
+of integers, for use when testing array and sequence types, which may put
+and get values at the same index.  Repeating pairs of indices are generated,
+so that it might be possible to observe that the value returned by a
+<code>get()</code>-method is the value that was previously stored by a 
+<code>put()</code>-method at the same index.
+</p>
+<h3>IndexGenerator: Version 1</h3>
+<pre>
+import org.jwalk.GeneratorException;
+import org.jwalk.gen.CustomGenerator;
+
+public class IndexGenerator implements CustomGenerator {
+  private MasterGenerator owner;
+  private Object result;
+  private boolean repeat = false;
+  
+  public boolean canCreate(Class&lt;?&gt; type) {
+    return type == int.class;
+  }
+  
+  public Object nextValue(Class&lt;?&gt; type) throws GeneratorException {
+    if (type != int.class)
+      throw new GeneratorException(type);
+    if (repeat)
+      repeat = false;
+    else {
+      repeat = true;
+      result = owner.nextValue(type);
+    }
+    return result;
+  }  
+  
+  public void setOwner(MasterGenerator generator) {
+    owner = generator;
+  }
+}
+</pre>
+<p>This version of <code>IndexGenerator</code> returns pairs of integer values 
+in the sequence: <em>{1, 1, 2, 2, 3, 3, ...}</em>.  It works by synthesising
+a new value if the flag <code>repeat</code> is set to <code>false</code>,
+otherwise it returns the previous value.  The flag flips between 
+<code>false</code> and <code>true</code> on each call.  Note how the actual
+<code>int</code> value is created by forwarding a request to the 
+<code>owner</code> of this custom generator.  The result is returned as a
+boxed-up <code>Integer</code> object.
+</p>
+<h3>IndexGenerator: Version 2</h3>
+<pre>
+import org.jwalk.GeneratorException;
+import org.jwalk.gen.CustomGenerator;
+
+public class IndexGenerator implements CustomGenerator {
+  private int seed = -1;
+  private boolean repeat = false;
+  
+  public boolean canCreate(Class&lt;?&gt; type) {
+    return type == int.class;
+  }
+  
+  public Object nextValue(Class&lt;?&gt; type) throws GeneratorException {
+    if (type != int.class)
+      throw new GeneratorException(type);
+    if (repeat) {
+      repeat = false;
+      return new Integer(seed);  // uses old value
+    }
+    else {
+      repeat = true;
+      result = new Integer(++seed);  // uses new value
+    }
+  }  
+  
+  public void setOwner(MasterGenerator generator) {
+  }   // nullop implementation
+}
+</pre>
+<p>The generator could equally have stored a local integer seed value and
+incremented this on every second invocation.  Notice how this version
+handles the synthesis rule locally and does not need to communicate with
+its <code>owner</code>.  The implementation of <code>setOwner()</code> is
+therefore a null operation.  Different in its behaviour from the previous 
+version, this custom generator returns pairs of integer values in the sequence: 
+<em>{0, 0, 1, 1, 2, 2, ...}</em>, that is, starting at 0 instead of 1, which
+will allow the first array index to be inspected also. 
+</p>
+<p>The default sequence of integers starts from 1.  This is because 0 is an
+identity element for common arithmetical computations.  JWalk's <em>algebraic 
+exploration</em> will prune test paths that result in no change to the test 
+class, so the standard value-synthesis algorithms try not to generate common
+identity elements.  However, when you know that you will be using integers for
+testing array indices, it makes more sense to start at zero.
+</p>
+</body>
+</html>
