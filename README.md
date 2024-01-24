@@ -6,6 +6,8 @@
 
 The only dependency needed is some version of java newer than 21, this is needed for your system to actually run `.jar` files, which is how Jwalk is distributed.
 
+You may also need to give execute privileges to `./gradlew`, `./REPACK.sh`, and `./START.sh` on Linux. Do this with `chmod +x <file>`.
+
 ## Usage
 
 I have already patched the source files to no longer require a license, all you need to do is:
