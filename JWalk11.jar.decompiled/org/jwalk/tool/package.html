@@ -1,0 +1,394 @@
+<html>
+<head>
+<title>
+JWalk 1.0 Tool Suite
+</title>
+</head>
+<body>
+<p>This sub-package for <strong>JWalk 1.0</strong> contains the JWalk testing
+tools, &copy; Anthony J H Simons, 2006-2009.
+This package provides a number of finished testing tools, implemented on
+top of the <strong>JWalk 1.0</strong> lazy systematic unit testing toolkit.
+These include the <strong>JWalkTester</strong> tool, a GUI-based test
+generator and execution tool; and the <strong>JWalkUtility</strong> tool,
+a command-line driven utility that prints results to standard output.  In
+future releases, further tools will be added to this package.   Other parts 
+of the <strong>JWalk 1.0</strong> tool suite are described in the following 
+packages: 
+<ul>
+<li>The root package <code>org.jwalk</code> is the entry point into the 
+JWalk component kit.</li>
+<li>The sub-package <code>org.jwalk.core</code> contains the core JWalk 
+test engine.</li>
+<li>The sub-package <code>org.jwalk.out</code> contains the test reports
+emitted by JWalk.</li>
+<li>The sub-package <code>org.jwalk.gen</code> contains custom test
+input generators.</li>
+<li>The sub-package <code>org.jwalk.test</code> contains sample test 
+classes.</li>
+<li>The sub-package <code>org.jwalk.tool</code> contains finished JWalk
+testing tools.</li>
+</ul>
+The rest of this package documentation describes how to access and execute
+the two tools <strong>JWalkTester</strong> and <strong>JWalkUtility</strong>.
+Both depend on a common set of testing concepts, which are explained below.
+</p>
+<h2>Common JWalk Testing Concepts</h2>
+<p>The following concepts are common to all the tools in the <strong>JWalk 1.0
+</strong> lazy systematic unit testing toolkit. 
+<h3>Test Class</h3>
+One unit, a compiled Java
+class, may be tested at a time.  This is known as the <code>testClass</code>,
+which must always be supplied by the tester and uploaded by the testing tool.  
+Other test parameters have suitable default settings, which the tester may 
+choose to override.
+</p>
+<h3>Test Strategy</h3>
+<p>The testing can follow different strategies.  The <code>strategy</code> 
+parameter is one of: <code>protocol</code>, meaning all interleaved method
+protocols; <code>algebra</code> (the default setting), meaning all algebraic 
+constructions; or <code>states</code>, meaning all high-level design states.  
+The effect of choosing one of these strategies is the following:
+<ul>
+<li><code>protocol</code> strategy:  JWalk creates test sequences corresponding 
+to every possible interleaved ordering of the test class's constructors and 
+methods;
+</li>
+<li><code>algebra</code> strategy: JWalk creates test sequences corresponding 
+to every novel algebraic construction, that is, sequences which drive the test
+object into novel concrete states;
+</li>
+<li><code>states</code> strategy: JWalk creates test sequences corresponding
+to the state cover, transition cover, and n-switch cover, which drive the test
+object through all of its high-level states and transitions.
+</li>
+</ul>
+Novel concrete states are entered when the test object's attributes are set 
+to previously unseen values.  Novel high-level design states are entered when
+any boolean state predicates provided in the API of the test class return 
+different <code>true</code> or <code>false</code> results.
+</p>
+<h3>Test Modality</h3>
+<p>Testing can be conducted to different levels.  The <code>modality</code> 
+parameter is one of: <code>inspect</code>, meaning to stop after analysing the
+structure and behaviour of the test class; <code>explore</code> (the default
+setting), meaning to exercise and display the result of every test sequence
+and let the tester interpret each result; or <code>validate</code>, meaning to
+verify the result of exercising each test sequence semi-automatically, using 
+an incrementally derived test oracle.
+</p>
+<h3>Test Depth</h3>
+<p>Testing can be conducted to different depths.  The <code>depth</code>
+parameter corresponds to the maximum length of generated test sequences (the 
+default is 3).  In the <code>protocol</code> and <code>algebra</code> modes, 
+the depth is the same as the maximum number of methods to be invoked after 
+initial construction.  In the <code>states </code> mode, the number of methods 
+is counted starting from each high-level design state instead (a prefix 
+sequence from the state cover is used to reach each high-level state, which
+is extended by each test sequence). 
+</p>
+<h3>Custom Settings</h3>
+<p>Testing can be customised in various ways.  The most common reason for 
+doing this would be to take control of how test inputs are synthesised.  
+To do this, the tester must supply one or more <code>CustomGenerator</code>s 
+that synthesise values in the manner and order desired by the tester.
+Other settings can be customised in the different testing tools.
+</p>
+
+<h2>The JWalkTester Tool</h2>
+<p>The classic <strong>JWalk 1.0</strong> lazy systematic testing tool is
+<strong>JWalkTester</strong>, a GUI-based class unit testing tool.  This
+is the default tool that is launched when the JAR-file download bundle is
+executed directly using the java command:
+<pre>
+	java -jar JWalk10.jar
+</pre>
+Alternatively, if the JAR-file archive is first unbundled, using the file
+extraction command:
+<pre>
+	jar -xf JWalk10.jar
+</pre>
+the <strong>JWalkTester</strong> tool may then be launched using the java 
+command:
+<pre>
+	java org.jwalk.tool.JWalkTester
+</pre>
+which will access the tool from within the package structure created in
+the current directory.  The main frame for the tool should appear, using
+the standard look-and-feel of the operating system, centrally in the 
+tester's monitor screen.
+</p>
+<h3>Test Class Panel</h3>
+<p>The tester must supply a test class.  The tool gives you the choice of
+browsing for a class, or entering the name of the class directly.  Because
+of the likelihood of classes being contained in named packages, the test 
+class is selected in two stages.  Firstly, the tester must set the working
+directory; then select the test class, which may be in the working directory
+or in some named sub-package under the working directory.  If an incorrect
+path to the test class is specified, the tool will not be able to load the
+test class.
+</p>
+<p>If the test class exists in the default package, then either of the
+<em>Browse</em>-buttons may be used to select the class directly, 
+and the tool will
+sort out the location and the name of the class.  If the test class exists
+in a named sub-package, then the top <em>Browse</em>-button 
+must be used to set the
+location, and the bottom <em>Browse</em>-button 
+to select the test class within its
+sub-package.  The first text field displays the directory from which the
+test class is loaded; and the second text field displays the package-qualified
+name of the test class.
+</p>
+<p>A test class may be specified by typing its package-qualified name
+directly into the lower text field.  Any named packages must either be listed
+on the standard java <em>CLASSPATH</em>, or exist under the current working
+location.
+</p>
+<h3>Test Settings Panel</h3>
+<p>The tester may then supply test settings for the current test series.
+These control how the tool executes.  The standard settings may be chosen
+from combo boxes and a number spinner:
+<ul>
+<li>Test Strategy: <ul>
+  <li><em>PROTOCOL</em> - exercise all method protocols</li>
+  <li><em>ALGEBRA</em> - exercise all algebraic constructions</li>
+  <li><em>STATES</em> - exercise all states and transitions</li>
+</ul></li>
+<li>Test Modality: <ul>
+  <li><em>INSPECT</em> - just inspect the test class's interface</li>
+  <li><em>EXPLORE</em> - also exercise the specified test series</li>
+  <li><em>VALIDATE</em> - also validate the results of the tests</li>
+</ul></li>
+<li>Test Depth: <ul>
+  <li>Choose a value from 0..20 for the maximum test sequence length</li>
+</ul></li>
+</ul>
+The meanings of each of these settings was explained above, in the section
+describing common JWalk testing concepts.
+</p>
+<h3>Test Execution Panel</h3>
+<p>To execute the chosen test series, click on the large animated button,
+featuring "JWalking Jimbo", the iconic cartoon character.  While the tool
+is busy, the animation will suspend, then resume once testing is over.
+Clicking on the test button will cause the current test class and test
+settings to be uploaded to the core JWalk test engine.  The first time
+the tool is used, there may be a slight delay as Java loads the relevant
+classes.  Subsequent re-testing will be quicker.
+</p>
+<p>In the <em>ALGEBRA</em> and <em>STATES</em> test strategies, the tool will
+also perform an initial dynamic analysis of the test class, by executing 
+probing sequences.  This may add a further noticeable delay to the perceived
+response time.  This can be reduced by altering the <code>probeDepth</code>
+parameter in the custom settings.  For very large testing challenges, the tool
+may run out of memory and return control to the tester.
+</p>
+<h3>Custom Generator Dialog</h3>
+<p>This is launched by clicking the <em>Generators</em>-button on the 
+<em>Custom Settings</em> panel.  The tester may upload any number of custom
+generators, in two stages.  First, a java class implementing the generator
+must be selected in the upper panel, in the same manner that the test
+class was selected above; then, this may be added to the current set of 
+custom generators using the <em>Add</em> button in the lower panel.
+</p>
+<p>The lower panel allows the tester to add or remove custom generators
+from the current set.  Clicking on any generator in the current working set 
+makes this the selected generator in the upper panel.  
+Clicking the <em>Add</em> button adds the
+currently selected generator to the working set.  Clicking the 
+<em>Remove</em> button removes the currently selected generator from the
+working set.  The modifications are uploaded to the core JWalk test engine
+when the tester clicks the <em>OK</em>-button.  Clicking the 
+<em>Cancel</em>-button will exit the dialog without making any changes.
+</p>
+<h3>Custom Settings Dialog</h3>
+<p>This is launched by clicking the <em>Configuration</em>-button on the 
+<em>Custom Settings</em> panel.  The tester may modify a number of additional
+settings which usually don't need changing.  These may be chosen using a
+combo-box and a couple of number spinners:
+<ul>
+<li>Test Convention: <ul>
+  <li><em>STANDARD</em> - exclude all of Object's methods</li>
+  <li><em>CUSTOM</em> - include some of Object's methods</li>
+  <li><em>COMPLETE</em> - include all of Object's methods</li>
+</ul></li>
+<li>Probe Depth: <ul>
+  <li>Choose a value from 0..20 for the maximum probe sequence length</li>
+</ul></li>
+<li>State Depth: <ul>
+  <li>Choose a value from 0..n for the tree-depth of object state comparison</li>
+</ul></li>
+</ul>
+The <code>Convention</code> parameter affects whether built-in methods from the
+root class <code>Object</code> are included in tests (the default is for these
+to be excluded).
+You can choose to include just the four methods 
+<code>equals()</code>, 
+<code>hashCode()</code>,
+<code>toString()</code> and
+<code>getClass()</code>;
+or all of<code>Object</code>'s methods, including the thread synchronising 
+methods (which raise exceptions in a single thread).
+The <code>probeDepth</code> parameter controls how deeply the test class is
+explored in the initial probing phase.  This can be raised, if states are 
+not being discovered, or lowered if memory is being exhausted.
+The <code>stateDepth</code> parameter controls whether object states are
+compared for equality in a shallow, or deeper way (the default is 0, meaning 
+shallow equality). Raising this causes clusters of reachable objects to be
+compared.  The changed configurations are uploaded to the core JWalk test 
+engine when the tester clicks the <em>OK</em>-button.  Clicking the 
+<em>Cancel</em>-button will exit the dialog without making any changes.
+</p>
+<h3>Output Panel</h3>
+<p>The test results will appear as tabbed panes in the right hand output
+panel.  Different tabs may appear for different test strategies, modalities
+and depths.  The tabs stack in rows.  Clicking on any tab will bring the 
+contents of the tab to the front, and also bring its row of tabs to the front
+row.  The tabs contain the following information:
+<ul>
+<li>Protocol Report - a static analysis of the test class's public 
+constructor and method protocols</li>
+<li>Algebra Report - a dynamic analysis of the test class's algebraic
+structure (<em>ALGEBRA</em> strategy only)</li>
+<li>State Report - a dynamic analysis of the test class's high-level
+states (<em>STATES</em> strategy only)</li>
+<li>Cycle Report - the results of one test cycle (for a given state, in
+the <em>STATES</em> strategy), to a given depth</li>
+<li>Summary Report - test summary statistics, giving execution behaviour
+and (in <em>VALIDATE</em> modality only) validation outcomes</li>
+</ul>
+The kinds of information presented by these reports are discussed in the
+documentation for the package <code>org.jwalk.out</code>.
+</p>
+<h3>Other JWalk Dialogs</h3>
+<p>During execution, the tool will sometimes interact with the tester in
+various ways.  The main dialogs are:
+<ul>
+<li><strong>JWalk Query</strong>: the tool asks the tester to confirm
+or reject a particular test sequence during validation</li>
+<li><strong>JWalk Notice</strong>: the tool notifies the tester about
+an action it has taken, that requires acknowledgement</li>
+<li><strong>JWalk Warning</strong>: the tool warns the tester about
+a limit that was encountered, that requires acknowledgement</li>
+<li><strong>JWalk Error</strong>: the tool reports an error in usage
+to the tester, that requires acknowledgement</li>
+</ul>
+Each of these offers suitable buttons for the tester to respond in
+one of the expected ways.
+</p>
+
+<h2>The JWalkUtility Tool</h2>
+<p>The original <strong>JWalk 1.0</strong> lazy systematic testing tool is
+<strong>JWalkUtility</strong>, a command-line utility program for class
+unit testing that prints results to standard output.  This tool may be
+executed by first unbundling the JAR-file archive, using the file
+extraction command:
+<pre>
+	jar -xf JWalk10.jar
+</pre>
+and then launching the <strong>JWalkUtility</strong> tool using the java 
+command:
+<pre>
+	java org.jwalk.tool.JWalkUtility
+</pre>
+which will access the tool from within the package structure created in
+the current directory.  A banner should be printed on standard output,
+indicating the authorship and version of the tool.
+</p>
+<h3>Command Line Parameters</h3>
+By default, executing the utility with no further command line parameters 
+merely prints out a message about correct usage.  The first command 
+line parameter must always be the name of the <code>testClass</code> and any 
+remaining parameters will be interpreted as further test settings.  These
+can be supplied in any order.  Suitable default values are chosen for any
+missing parameters.  The compiled class file for the test class must be 
+accessible to Java (on the <em>CLASSPATH</em>; or in the current directory).
+</p>
+<p>The remaining parameters are any of the test <code>strategy</code>, test
+<code>modality</code> (values supplied as lower-case strings), the test
+<code>depth</code> (supplied as a positive integer) and the name of any custom
+<code>generator</code> (supplied as a string in capital-case, as per the usual
+naming style for Java classes).  Parameters are processed in the following way:
+any integral parameter is treated as the depth.  Any parameter containing the
+substring "Generator" is treated as the name of a generator.  Any other 
+parameter is expected to name a <code>strategy</code> or <code>modality</code>
+(see above for expected values).
+</p>
+<h3>Executing with Different Settings</h3>
+<p>Invoking the command line utility with only the test class named on the
+command line will cause the tool to execute with default settings for the
+remaining parameters.  For example, the following exercises all algebraic 
+constructions of a compiled <code>Stack</code> class (in the current
+working directory) to a depth of 3:
+<pre>
+	java org.jwalk.JWalkUtility Stack 
+</pre>
+The test strategy, modality and depth of exploration may be changed by 
+supplying further parameters on the command line.  For example, the following
+explores all high-level states and transitions of a <em>ReservableBook</em> 
+to a transition depth of 4:
+<pre>
+	java org.jwalk.JWalkUtility ReservableBook states 4
+</pre>
+The high-level states will be determined by natural predicates, such as 
+<code>isOnLoan()</code> and <code>isReserved()</code>, in the test class's
+API.  Results will be generated for each state and each cycle of increasing
+transition path length.
+</p>
+<p>The following example merely inspects the protocol of a <code>Wallet</code> 
+class, in which case the depth parameter for exploration is not relevant:
+<pre>
+	java org.jwalk.JWalkUtility Wallet protocol inspect
+</pre>
+The following example causes the tool to interact with the tester.  It
+validates the algebraic structure of the <code>Stack</code> class, exploring
+to depth 3 and also asking the user to confirm or reject the outcomes of 
+certain test sequences: 
+<pre>
+	java org.jwalk.JWalkUtility Stack algebra validate 3
+</pre>
+When operating in validation modality, the tool prints out selected test
+sequences and requests confirmation of the test outcomes from
+the tester, who enters 'y', 'n' or 'q' at the console (carriage return is
+interpreted as shorthand for 'y'; entering 'q' quits the current test series).
+<h3>Executing with Custom Settings</h3>
+<p>The tester can take control of how test input values are supplied to
+the test class's methods by supplying one or more custom generators.  The name 
+of each custom generator is supplied as a command line parameter in capital 
+case, ending with the substring "Generator" to be correctly identified by 
+the tool.  The name should refer to a class that satisfies the interface of 
+<code>CustomGenerator</code>.  The class must be accessible to Java
+(on the <em>CLASSPATH</em>; or in the current directory).
+</p>
+<p>The following example exercises the method protocols of a compiled 
+<code>Vector</code> class, using a custom <code>IndexGenerator</code> that 
+generates integer indices in pairs, to allow observation of successive 
+<code>put()</code> and <code>get()</code> operations at the same index.
+<pre>
+	java org.jwalk.JWalkUtility Vector protocol explore 3 IndexGenerator
+</pre>
+It is assumed that <code>IndexGenerator.class</code> is a compiled Java class
+file that is accessible to Java.  This custom generator will be loaded and
+installed as a delegate generator.
+</p>
+<p>Other kinds of configuration settings cannot be changed with the
+<strong>JWalkUtility</strong> tool.
+</p>
+<h3>Output from the Utility</h3>
+<p>The tool prints all results on standard output.  After the intitial
+banner, the result of inspection is printed, displaying the protocol of the
+test class (optionally followed by an analysis of its algebraic structure;
+or an analysis of its state space, including the state cover test set).
+After this, one or more test cycle reports may be printed, for test cycles
+containing sequences of increasing length.  Finally, a test summary report
+may be printed, giving summary statistics.  In interactive modes, the
+results will appear in blocks, after the tester has completed the confirmations
+for that cycle.
+</p>
+<p>Any notifications or warnings must be acknowledged by the tester (typing
+carriage return is understood to mean "OK").  Any oracle file will be
+saved in the same directory as the test class.  Any exceptions will be
+printed on standard error.
+</p>
+</body>
+</html>
