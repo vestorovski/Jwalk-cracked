@@ -1,0 +1,190 @@
+<html>
+<head>
+<title>
+JWalk 1.0 Tool Suite
+</title>
+</head>
+<body>
+<p>This sub-package for <strong>JWalk 1.0</strong> contains the core JWalk
+test engine, &copy; Anthony J H Simons, 2006-2009.
+Programmers are not expected to need to interact with components in this
+package directly, unless they are building third-party testing tools that
+wish to access individual <code>TestSequence</code> objects, in order to
+report results in a customised way.  Otherwise, programmers should not
+touch the objects in this package.  Doing so might affect the process of
+testing in a deleterious way.  Other parts of the <strong>JWalk 1.0</strong>
+tool suite are described in the following packages: 
+<ul>
+<li>The root package <code>org.jwalk</code> is the entry point into the 
+JWalk component kit.</li>
+<li>The sub-package <code>org.jwalk.core</code> contains the core JWalk 
+test engine.</li>
+<li>The sub-package <code>org.jwalk.out</code> contains the test reports
+emitted by JWalk.</li>
+<li>The sub-package <code>org.jwalk.gen</code> contains custom test
+input generators.</li>
+<li>The sub-package <code>org.jwalk.test</code> contains sample test 
+classes.</li>
+<li>The sub-package <code>org.jwalk.tool</code> contains finished JWalk
+testing tools.</li>
+</ul>
+The rest of this package documentation gives an overview of the various
+<code>JWalker</code> strategy classes that implement the test engine; the 
+<code>TestSequence</code>s that these construct, consisting of a number of 
+<code>TestCase</code>s that exercise the methods of the test class; and
+the various <code>Generator</code>s that synthesise input values for each
+<code>TestSequence</code>.
+</p>
+
+<h2>The JWalk Test Engine</h2>
+<p>The core JWalk test engine consists of a number of test strategy objects,
+known as JWalkers.  These are classified in a hierarchy of JWalkers,
+according to their abilities to inspect or explore the test class.  
+<ul>
+<li>org.jwalk.JWalker - the basic strategy, which dispatches the others<ul>
+  <li>org.jwalk.core.ClassInspector - extracts the public method interface<ul>
+    <li>org.jwalk.core.ProtocolWalker - explores all interleaved methods<ul>
+      <li>org.jwalk.core.AlgebraWalker - explores all algebraic constructions</li>
+      <li>org.jwalk.core.StateSpaceWalker - explores all states and transitions</li>
+    </ul></li>
+  </ul></li>
+</ul></li>
+</ul>
+Each JWalker inherits the capabilities of its ancestors and redefines the main
+<code>execute()</code> method.  From the programmer's point of view, the entry
+point is the class <code>JWalker</code>, which acts as a dispatcher and launches
+the appropriate JWalker subclass, according to the test settings chosen by the
+tester.  Each JWalker performs interleaved cycles of test generation, test 
+execution and dynamic analysis of the test results.  Feedback from the latest
+test cycle is used to inform the JWalker about which paths should be expanded 
+in the next test cycle.  The behaviour of the individual JWalkers is described
+below.
+</p>
+<h3>ClassInspector</h3>
+<p>This JWalker performs a detailed static analysis of the test class's public
+constructor and method interface.  If the test class is an enumerated type,
+it extracts the enumerated constants.  It also provides the ability to estimate
+the baseline test-set size after exploring the test class breadth-first, to
+any bounded depth.  This information is used later to calculate how effective
+the test path pruning strategy of other JWalker's has been.  The results of
+a <code>ClassInspector</code> are reported in a <code>ProtocolReport</code>.
+</p>
+
+<h3>ProtocolWalker</h3>
+<p>This JWalker performs a detailed static analysis of the test class's public
+constructor and method interface and then explores the test class's constructors
+and methods to a given bounded depth.  It then "walks through the protocol", 
+meaning that it attempts all constructors, followed by all possible interleaved
+combinations of the test class's methods.  In each subsequent test cycle, it 
+prunes all those test paths whose prefix terminated in an exception.  This may 
+yield a reduction over the baseline test set, if certain methods raised
+exceptions.  The initial analysis after class inspection is reported in a
+<code>ProtocolReport</code> and the resuts of exploring the protocols of the
+test class are reported in a number of <code>CycleReport</code>s, one for
+each test cycle of increasing depth, followed by a <code>SummaryReport</code>, 
+giving summary statistics.
+</p>
+
+<h3>AlgebraWalker</h3>
+<p>This JWalker performs a detailed static analysis of the test class's public
+constructor and method interface, then performs a dynamic analysis of the 
+test class's algebraic structure, by constructing probing paths through the
+protocol of the test class and noting whether certain sequences modify the
+test object's state, leave it unchanged, or return to a previously visited
+state.  The methods of the test class are classified into <em>primitive, 
+transformer</em> or <em>observer</em> categories (constructors may be
+primitive, or derived also).  Finally, this JWalker explores the test class's
+algebraic constructions to a given bounded depth.  It "walks through the 
+algebra", meaning that it grows only those test paths that consist of primitive
+operations, and examines all operations at the leaves of this tree. In each 
+subsequent test cycle, it prunes all those test paths whose prefix terminated 
+in an exception, an observer, or a transformer.  This yields a considerable
+reduction over the baseline test set.  The initial analysis after class 
+inspection is reported in an <code>AlgebraReport</code> and the remaining
+results are reported as per <code>ProtocolExplorer</code>, above.
+</p>
+
+<h3>StateSpaceWalker</h3>
+<p>This JWalker a detailed static analysis of the test class's public
+constructor and method interface, then performs a dynamic analysis of the 
+test class's high-level state space, using any state predicates supplied in
+the test class's interface as hints about its high-level or abstract states.
+It does this by constructing probing paths through the test class's algebraic
+structure, seeking those paths that cause state predicates to return <code>
+true</code> or <code>false</code> in different combinations.  The high-level
+states correspond to (possibly a subset of) the boolean product.  Finally,
+this JWalker explores the test class's high-level states and transitions to
+a given bounded depth.  It "walks the states and transitions" by constructing
+the state cover, then extending this with transition paths of increasing
+length.  It prunes paths in a similar way to <code>ProtocolExplorer</code>
+and generates <code>CycleReport</code>s for each high-level state and
+transition path depth.  The initial analysis after class inspection is 
+reported in a <code>StateReport</code>, which lists the states and the
+state cover, and the remaining results are reported as per 
+<code>ProtocolExplorer</code>, above.
+</p>
+<h2>TestSequence and TestCase</h2>
+<p>A single execution path is represented as a <code>TestSequence</code>
+that consists of a number of <code>TestCase</code>s.  There are different
+kinds of <code>TestCase</code>, classified in a hierarchy according to 
+the kind of element that they execute.  The featured classes involved in 
+test sequences are:
+<ul>
+<li>org.jwalk.core.TestSequence - a sequence of abstract TestCase objects</li>
+<li>org.jwalk.core.TestCase - an abstract test case to execute an element<ul>
+  <li>org.jwalk.core.EnumTestCase - extracts a single enumerated constant</li>
+  <li>org.jwalk.core.ParamTestCase - an abstract test case involving parameters<ul>
+    <li>org.jwalk.core.CreateTestCase - a test case to execute a single constructor</li>
+    <li>org.jwalk.core.InvokeTestCase - a test case to execute a single method</li>
+    </ul></li>
+  </ul></li>
+</ul></li>
+</ul>
+Any single <code>TestSequence</code> commences with either a 
+<code>CreateTestCase</code> or an <code>EnumTestCase</code>, followed by an 
+arbitrary number of <code>InvokeTestCase</code> test cases.  The sequence is
+created by a <code>JWalker</code> when the latter is computing the next set
+of paths to explore, then populated with actual values just prior to execution.
+After execution, the <code>TestSequence</code> may be inspected to determine
+a number of properties about the last-executed operation in the sequence.
+</p>
+<h2>Generators of Test Inputs</h2>
+<p>The various <code>JWalker</code> strategy classes construct their chosen
+<code>TestSequence</code>s of increasing length, up to the specified bounded
+depth.  Prior to executon, each <code>TestSequence</code> must be populated
+with actual test inputs, passed as arguments to the constructors and methods 
+being executed.  This is achieved using a family <code>Generator</code>s. 
+There are two main kinds of <code>Generator</code>, declared as the following
+interfaces, with suitable concrete implementations:
+<ul>
+<li>org.jwalk.Generator - the abstract interface for all test input generators<ul>
+  <li>org.jwalk.core.MasterGenerator - the interface for top-level master generators<ul>
+    <li>org.jwalk.core.ObjectGenerator - the standard master generator used by JWalk</li>
+  </ul></li>
+  <li>org.jwalk.gen.CustomGenerator - the interface for delegate custom generators<ul>
+    <li>org.jwalk.gen.StringGenerator - generates a conventional sequence of strings</li>
+    <li>org.jwalk.gen.InterfaceGenerator - generates concrete instances for interfaces</li>
+    <li>org.jwalk.gen.EnumGenerator - generates all values of enumerated types</li>
+    <li>org.jwalk.gen.PlatformGenerator - generates values with platfom-specific ranges</li>
+    <li>org.jwalk.gen.RedirectInGenerator - redirects standard input to a text file</li>
+  </ul></li>
+</ul></li>
+</ul>
+A <code>MasterGenerator</code> is a top-level generator which, in addition to
+synthesising values of different types, is capable of logging the created
+values and mapping from these to a persistent string representation, called
+the <em>oracle value</em> encoding.   A <code>CustomGenerator</code> is a
+special purpose generator, possibly supplied by the tester, which generates
+test inputs for one or more types in a specific way, controlled by the tester.
+</p>
+<p>The default value-generation strategy synthesises quasi-unique values of
+each type, in a monotonically increasing way.  To change this strategy, the
+tester may add a <code>CustomGenerator</code> as a delegate of the current
+<code>MasterGenerator</code>, to take control of how instances of a specific
+type are to be created.  Four custom generators are installed as standard.
+The tester may install further custom generators.  See the associated
+documentation for the package <code>org.jwalk.gen</code>.
+</p>
+
+</body>
+</html>
