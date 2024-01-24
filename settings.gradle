@@ -10,4 +10,4 @@ plugins {
 }
 
 rootProject.name = 'JwalkCracked'
-include('app')
+// include('app')
