@@ -4,15 +4,17 @@
 
 ## Requirements
 
-The only dependency needed is some version of java newer than 21, this is needed for your system to actually run `.jar` files, which is how Jwalk is distributed.
+The only dependency needed is some version of java newer than 21, this is needed for your system to actually run `.jar` files, which is how Jwalk is distributed. 
 
-You may also need to give execute privileges to `./gradlew`, `./REPACK.sh`, and `./START.sh` on Linux. Do this with `chmod +x <file>`.
+On Windows machines, you need the `java` binary added to your path and runnable via CMD. Instructions are a Google search away.
+
+On Linux, you may also need to give execute privileges to `./gradlew`, `./REPACK.sh`, and `./START.sh`. Do this with `chmod +x <file>`.
 
 ## Usage
 
 I have already patched the source files to no longer require a license, all you need to do is:
 
- - run `./REPACK.sh` to recompile the patched source files into a jar file
+ - run `./REPACK.sh` or `.\REPACK.bat` to recompile the patched source files into a jar file
     - This process uses the Gradle wrapper, which is built into this repository (you do not need to install `gradle` on your system)
     - The built `.jar` file can be found in `./build/libs/JwalkCracked-uber.jar`.
- - run `./START.sh` to start the program GUI
+ - run `./START.sh` or `.\START.bat` to start the program GUI
