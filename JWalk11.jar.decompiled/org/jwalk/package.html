@@ -1,0 +1,209 @@
+<html>
+<head>
+<title>
+JWalk 1.0 Tool Suite
+</title>
+</head>
+<body>
+<p>This package contains the <strong>JWalk 1.0</strong> lazy systematic unit 
+testing tool suite, &copy; Anthony J H Simons, 2006-2009.
+This is the root package for the <strong>JWalk 1.0</strong> tool suite, 
+containing the component kit for building your own <strong>JWalk 1.0</strong> 
+unit testing applications.  The various sub-packages found within this package
+contain further components, organised by their function; and one sub-package
+contains the finished testing tools <strong>JWalkTester</strong> and 
+<strong>JWalkUtility</strong>, which may be executed directly.  In overview:
+<ul>
+<li>This package <code>org.jwalk</code> is the entry point into the JWalk 
+component kit.</li>
+<li>The sub-package <code>org.jwalk.core</code> contains the core JWalk 
+test engine.</li>
+<li>The sub-package <code>org.jwalk.out</code> contains the test reports
+emitted by JWalk.</li>
+<li>The sub-package <code>org.jwalk.gen</code> contains custom test
+input generators.</li>
+<li>The sub-package <code>org.jwalk.test</code> contains sample test 
+classes.</li>
+<li>The sub-package <code>org.jwalk.tool</code> contains finished JWalk
+testing tools.</li>
+</ul>
+If you are seeking to execute one of the testing tools, please refer to the 
+instructions immediately below and also the associated documentation for the 
+sub-package <code>org.jwalk.tool</code>.
+</p>
+<h2>Instructions for Use</h2>
+<p>This package is provided as an executable JAR-file, whose entry point is
+the class <code>org.jwalk.tool.JWalkTester</code>, one of the tools in the
+JWalk tool suite.  Launching the JAR-file directly will therefore execute 
+<strong>JWalkTester</strong>, a GUI-based Java class unit tester.  This 
+tool is described in detail in the sub-package <code>org.jwalk.tool</code>.
+</p>
+<p>It is also possible to unpack the JAR archive as a tree of packages (this
+package and its included sub-packages) and invoke the Java runtime on other
+main entry points, such as <code>org.jwalk.tool.JWalkUtility</code>, in 
+order to execute <strong>JWalkUtility</strong>, the command-line based Java
+class unit tester.  
+</p>
+<p>In general, this package and its sub-packages (not including 
+<code>org.jwalk.tool</code>) constitute a toolkit, out of which developers 
+may construct bespoke JWalk testing applications.  The rest of this package 
+documentation describes how to incorporate the toolkit in such third-party 
+applications.
+</p>
+<h2>The JWalker Component API</h2>
+<p>The following assumes that the developer wishes to build a third-party
+application, which incorporates the <strong>JWalk 1.0</strong> testing
+engine.  The application is expected to provide its own user interface and
+display facilities.  The application will need to interface with some of 
+the modular components in this package, <code>org.jwalk</code>, and with
+some of the components from sub-packages, in particular 
+<code>org.jwalk.out</code>.  
+This introduction provides only an overview of how the modular API can be 
+used.  Please refer to the more detailed API descriptions for the main 
+<code>JWalker</code> test engine and its component APIs <code>Settings</code> 
+and <code>Channels</code>.  Many more parameters can be fine-tuned than are 
+described in this brief introduction.
+</p>
+<p>The third-party program will want to load a test class, set the test 
+parameters and specify how to receive call-back communications submitted 
+by a <code>JWalker</code> in the form of <code>QuestionEvent</code> and 
+<code>ReportEvent</code> events.  To do this, the third-party program must 
+create an instance of the main <code>JWalker</code> test engine; and then
+access its <code>Channels</code> API to set up the communication
+channels; and then access its <code>Settings</code> API to supply the 
+desired test parameters and upload the test class.
+</p>
+
+<h3>Example 1:  Protocol Exploration</h3>
+<p>The following fragment illustrates the style of code necessary to set
+up the test class, construct a <code>JWalker</code>, register third-party 
+listeners, set test parameters and execute a test series.  This example
+will explore all method protocols of a <code>Stack</code> class to a 
+depth of 4:
+<pre>
+	Class&lt;?&gt; testClass = Stack.class;   // or by other means
+
+	JWalker walker = new JWalker();
+	Channels channels = walker.getChannels();
+	Settings settings = walker.getSettings();
+	
+	channels.addQuestionListener(new MyQuestionListener());
+	channels.addReportListener(new MyReportListener());
+
+	settings.setTestClass(testClass);	
+	settings.setStrategy(Strategy.PROTOCOL);
+	settings.setModality(Modality.EXPLORE);
+	settings.setTestPathDepth(4);
+	
+	walker.execute();
+</pre>
+The classes <code>MyQuestionListener</code> and <code>MyReportListener</code>
+are supplied by the third-party program, according to the interface
+specifications in <code>QuestionListener</code> and <code>ReportListener</code>.
+These classes may interact with the tester through dialogs, and display the
+contents of reports in any desired manner.  See the package documentation for
+<code>org.jwalk.out</code> for further details of kinds of reports emitted
+by the <strong>JWalk 1.0</strong> tool suite. 
+</p>
+
+<h3>Example 2:  Algebraic Exploration</h3>
+<p>The following fragment illustrates the style of code necessary to initiate
+the algebraic exploration of a <code>Stack</code> class to a depth of 3,
+using the <code>JWalker</code> API as before, but this time supplying
+slightly different test settings:
+<pre>
+	String className = "Stack";   // or by other means
+	
+	JWalker walker = new JWalker();
+	Channels channels = walker.getChannels();
+	Settings settings = walker.getSettings();
+	
+	Console console = new Console();
+	channels.addQuestionListener(console);
+	channels.addReportListener(console);
+	
+	settings.setTestClass(className);
+	settings.setStrategy(Strategy.ALGEBRA);
+	settings.setModality(Modality.EXPLORE);
+	settings.setTestPathDepth(3);
+	
+	walker.execute();
+</pre>
+This uses a default <code>Console</code> object to fulfil both the roles of the
+<code>QuestionListener</code> and the <code>ReportListener</code> interfaces.
+<code>Console</code> is supplied with the toolkit and it unpacks the various 
+communicated events and pipes them to standard output, expecting responses 
+from the tester on standard input.  If the third-party program fails to set
+any listeners, then <code>Console</code> is used by default in any case.
+</p>
+<p>This example also illustrates how to set the test class <em>by name</em>, 
+rather than by supplying the class object directly.  The test class will be
+loaded in the manner specified in <code>Settings.setTestClass(String)</code>.
+In particular, Java will search for the test class in the directory currently
+specified by <code>Settings.getTestClassDirectory()</code>.  See the 
+<code>Settings</code> API for details of how to change this.
+</p>
+
+<h3>Example 3:  State-Space Validation</h3>
+<p>The following fragment illustrates how a custom generator may be supplied
+via the <code>Settings</code> API; and how the directory in which oracles are
+saved may be set explicitly (the default is the test class directory).
+This fragment will perform state-validation on a <code>Vector</code> class to
+a transition path depth of 2, using a user-supplied custom
+<code>IndexGenerator</code> as the generator.
+<pre>
+	Class&lt;?&gt; testClass = Vector.class;       // or by other means
+	Class&lt;?&gt; custom = IndexGenerator.class;  // or by other means
+	
+	JWalker walker = new JWalker();
+	Channels channels = walker.getChannels();
+	Settings settings = walker.getSettings();
+	
+	channels.addQuestionListener(new MyQuestionListener());
+	channels.addReportListener(new MyReportListener());
+	
+	settings.setTestClass(testClass);
+	settings.addCustomGenerator(custom);
+	settings.setOracleDirectory(new File("test/oracles/"));
+	settings.setStrategy(Strategy.STATES);
+	settings.setModality(Modality.VALIDATE);
+	settings.setTestPathDepth(2);
+	
+	walker.execute();
+</pre>
+Custom generator classes may be supplied by name, as well as by value, in a 
+similar manner to the test class.  More than one custom generator may be
+supplied.  In this example, the oracle data file will be saved in the file: 
+<code>"test/oracles/Vector.jwk"</code>.  The oracle data file is valid for
+retesting using the same generators, but not necessarily for other generators, 
+which may synthesise different test inputs in different orders.
+</p>
+<h2>Handling JWalk Exceptions</h2>
+<p>While the JWalk tool suite automatically handles a number of exceptional
+cases, such as when one of the tested methods of the test class fails, 
+or when memory capacity is exhausted during testing, 
+third party software must be able to recognise and possibly
+handle the following five kinds of exception.
+<ul>
+<li><code>LoaderException</code> - raised if the test class, or a custom
+generator could not be loaded (wrong pathname given)</li>
+<li><code>SettingsException</code> - raised if the third-party software 
+supplies invalid test settings (bad constants, out of range values)</li>
+<li><code>PermissionException</code> - raised if the test class refuses 
+permission to be executed (wrong visibility, security permissions)</li>
+<li><code>GeneratorException</code> - raised if test inputs could not be
+synthesised, or a generator fails (unknown types, user generator)</li>
+<li><code>ExecutionException</code> - raised if any constructor or method
+could not be invoked, or behaved randomly (security, nondeterminism)</li>
+</ul>
+These are the only conditions which actually prevent a JWalker from executing.
+The tools warn of other detected events, such as running out of memory, or 
+failure to detect all expected states.  All of the above exceptions are
+subclasses of <code>JWalkException</code>, so third-party software may
+choose to trap just the one exception, or handle them more selectively.
+Each kind of exception provides methods to interrogate the cause of the
+exception more finely, which may be used to tailor error messages.
+</p>
+
+</body>
+</html>
